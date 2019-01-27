@@ -46,14 +46,16 @@ struct unique_ptr
     {
         if(&other == this) return *this;
         move_impl(std::move(other));
+        return *this;
     }
-    unique_ptr operator=(std::nullptr_t np)
+    unique_ptr operator=(std::nullptr_t)
     {
         if(this == nullptr) return *this;
         deleter->delet(t);
         if(deleter) { delete deleter; }
         t = nullptr;
         deleter = nullptr;
+        return *this;
     }
     T* release() noexcept
     {
