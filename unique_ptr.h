@@ -25,10 +25,15 @@ struct unique_ptr
     };
     unique_ptr() noexcept: t(nullptr), deleter(nullptr) {}
     unique_ptr(std::nullptr_t): t(nullptr), deleter(nullptr) {}
+    void delet()
+    {
+        if(deleter) { deleter->delet(t); }
+        else { delete t; }
+    }
     void move_impl(unique_ptr &&other) noexcept
     {
-        deleter->delet(t);
-        if(deleter) { delete deleter; }
+        delet();
+        delete deleter;
         t = std::move(other.t);
         deleter = std::move(other.deleter);
         other.t = nullptr;
@@ -37,10 +42,11 @@ struct unique_ptr
     unique_ptr(unique_ptr &&other) { move_impl(std::move(other)); }
     template <typename func>
     unique_ptr(T *tt, func function): t(tt), deleter(new Deleter_Impl<func>(function)) {}
+    unique_ptr(T *tt, std::nullptr_t): t(tt), deleter(nullptr) {}
     ~unique_ptr()
     {
-        deleter->delet(t);
-        if(deleter) { delete deleter; }
+        delet();
+        delete deleter;
     }
     unique_ptr operator=(unique_ptr &&other)
     {
@@ -51,8 +57,8 @@ struct unique_ptr
     unique_ptr operator=(std::nullptr_t)
     {
         if(this == nullptr) return *this;
-        deleter->delet(t);
-        if(deleter) { delete deleter; }
+        delet();
+        delete deleter;
         t = nullptr;
         deleter = nullptr;
         return *this;
@@ -66,16 +72,14 @@ struct unique_ptr
         return old;
     }
     template <typename func>
-    void reset(T *tt, func new_deleter)
+    void reset(T *tt, func &&new_deleter)
     {
         T *old = t;
         Deleter *old_deleter = deleter;
-        t = tt, deleter = new Deleter_Impl<func>(new_deleter);
-        if(old && old_deleter)
-        {
-            old_deleter->delet(old);
-            delete old_deleter;
-        }
+        t = tt, deleter = new Deleter_Impl<func>(std::forward<func>(new_deleter));
+        if(old_deleter) { old_deleter->delet(old); }
+        else { delete old; }
+        delete old_deleter;
     }
     void swap(unique_ptr &other) noexcept
     {
@@ -99,7 +103,7 @@ void swap(unique_ptr<T> one, unique_ptr<T> two)
 template <typename T, typename ...Args>
 unique_ptr<T> make_unique(Args&& ...args)
 {
-    return unique_ptr<T>(new T(std::forward<Args>(args)...), std::default_delete<T>());
+    return unique_ptr<T>(new T(std::forward<Args>(args)...), nullptr);
 }
 template <typename T1, typename T2>
 bool operator==(unique_ptr<T1> &one, unique_ptr<T2> &two)
