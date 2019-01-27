@@ -24,7 +24,7 @@ struct unique_ptr
             func function;
     };
     unique_ptr() noexcept: t(nullptr), deleter(nullptr) {}
-    unique_ptr(std::nullptr_t np): t(nullptr), deleter(nullptr) {}
+    unique_ptr(std::nullptr_t): t(nullptr), deleter(nullptr) {}
     void move_impl(unique_ptr &&other) noexcept
     {
         deleter->delet(t);
