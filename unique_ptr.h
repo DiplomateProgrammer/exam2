@@ -58,8 +58,10 @@ struct unique_ptr
     T* release() noexcept
     {
         delete deleter;
-        t = nullptr;
         deleter = nullptr;
+        T* old = t;
+        t = nullptr;
+        return old;
     }
     template <typename func>
     void reset(T *tt, func new_deleter)
